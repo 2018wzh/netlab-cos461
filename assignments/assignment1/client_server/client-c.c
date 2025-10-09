@@ -52,24 +52,49 @@ int client(char *server_ip, char *server_port) {
     perror("Error connecting to server");
     return -1;
   }
-  // Read message from stdin and send to server
+  // Read message from stdin in chunks of SEND_BUFFER_SIZE and send to server
   char buffer[SEND_BUFFER_SIZE];
-  memset(buffer, 0, SEND_BUFFER_SIZE);
-  size_t n = fread(buffer, 1, SEND_BUFFER_SIZE - 1, stdin);
-  if (n < 0) {
-    perror("Error reading from stdin");
+  while (1) {
+    size_t n = fread(buffer, 1, SEND_BUFFER_SIZE, stdin);
+    if (n == 0) {
+      if (feof(stdin)) {
+        break; // EOF reached
+      }
+      if (ferror(stdin)) {
+        perror("Error reading from stdin");
+        close(sockfd);
+        return -1;
+      }
+      // n == 0 but neither feof nor ferror? treat as EOF
+      break;
+    }
+    // Send n bytes to server, loop until all bytes sent
+    size_t total_sent = 0;
+    while (total_sent < n) {
+      ssize_t sent = send(sockfd, buffer + total_sent, n - total_sent, 0);
+      if (sent < 0) {
+        perror("Error sending to server");
+        close(sockfd);
+        return -1;
+      }
+      if (sent == 0) {
+        // remote closed connection unexpectedly
+        fprintf(stderr, "Peer closed connection while sending\n");
+        close(sockfd);
+        return -1;
+      }
+      total_sent += (size_t)sent;
+    }
+    // printf("Sent %zu bytes to server\n", total_sent);
+  }
+
+  // Finished sending data; optionally signal EOF to server and close socket
+  if (shutdown(sockfd, SHUT_WR) < 0) {
+    perror("Error shutting down socket write side");
+    close(sockfd);
     return -1;
   }
-  // Send message to server
-  size_t total_sent = 0;
-  while (total_sent < n) {
-    ssize_t sent = send(sockfd, buffer + total_sent, n - total_sent, 0);
-    if (sent < 0) {
-      perror("Error sending to server");
-      return -1;
-    }
-    total_sent += sent;
-  }
+  close(sockfd);
   return 0;
 }
 

@@ -1,19 +1,18 @@
 /*****************************************************************************
- * server-c.c                                                                 
+ * server-c.c
  * Name:
  * NetId:
  *****************************************************************************/
 
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <errno.h>
+#include <unistd.h>
 
 #define QUEUE_LENGTH 10
 #define RECV_BUFFER_SIZE 2048
@@ -22,11 +21,11 @@
  * Open socket and wait for client to connect
  * Print received message to stdout
  * Return 0 on success, non-zero on failure
-*/
+ */
 int server(char *server_port) {
   // Listen to socket on the given port
   int port = atoi(server_port);
-  // Check port number 
+  // Check port number
   if (port <= 0 || port > 65535) {
     fprintf(stderr, "Invalid port number: %s\n", server_port);
     return -1;
@@ -53,8 +52,8 @@ int server(char *server_port) {
     perror("Error listening on socket");
     return -1;
   }
-  //printf("Server ready, listening on port %d\n", port);
-  // Accept incoming connections
+  // printf("Server ready, listening on port %d\n", port);
+  //  Accept incoming connections
   while (1) {
     // Get client connection
     struct sockaddr_in cli_addr;
@@ -64,20 +63,35 @@ int server(char *server_port) {
       perror("Error accepting connection");
       continue;
     }
-    //printf("Client connected\n");
-    // Receive message from client
-    char buffer[RECV_BUFFER_SIZE];
-    ssize_t n = recv(clisockfd, buffer, RECV_BUFFER_SIZE - 1, 0);
-    if (n < 0) {
-      perror("Error reading from socket");
-      close(clisockfd);
-      continue;
+    // printf("Client connected\n");
+    while (1) {
+      // Receive message from client
+      char buffer[RECV_BUFFER_SIZE];
+      memset(buffer, 0, RECV_BUFFER_SIZE);
+      ssize_t n = recv(clisockfd, buffer, RECV_BUFFER_SIZE - 1, 0);
+      if (n < 0) {
+        perror("Error receiving from client");
+        close(clisockfd);
+        break;
+      } else if (n == 0) {
+        // printf("Client disconnected\n");
+        close(clisockfd);
+        break;
+      }
+      // Print received message to stdout
+      size_t total_written = 0;
+      while (total_written < n) {
+        ssize_t written =
+            fwrite(buffer + total_written, 1, n - total_written, stdout);
+        if (written < 0) {
+          perror("Error writing to stdout");
+          close(clisockfd);
+          return -1;
+        }
+        total_written += written;
+      }
     }
-    buffer[n] = '\0';
-    //printf("Received message: %s\n", buffer);
-    // Write message to stdout
-    fwrite(buffer, 1, n, stdout);
-    fflush (stdout);
+    fflush(stdout);
     // Close client socket
     close(clisockfd);
   }
@@ -88,7 +102,7 @@ int server(char *server_port) {
 /*
  * main():
  * Parse command-line arguments and call server function
-*/
+ */
 int main(int argc, char **argv) {
   char *server_port;
 
