@@ -45,16 +45,13 @@ func server(server_port string) {
 		if err != nil {
 			log.Printf("Error accepting connection: %v", err)
 		}
-		// Handle connection in a separate goroutine
-		go func(c net.Conn) {
-			defer c.Close()
-			// Wrap the connection in a buffered reader to improve reading efficiency
-			reader := bufio.NewReaderSize(c, RECV_BUFFER_SIZE)
-			_, err := io.Copy(os.Stdout, reader)
-			if err != nil {
-				log.Printf("Error copying data to stdout: %v", err)
-			}
-		}(conn)
+		// Handle connection
+		reader := bufio.NewReaderSize(conn, RECV_BUFFER_SIZE)
+		_, err = io.Copy(os.Stdout, reader)
+		if err != nil {
+			log.Printf("Error copying data to stdout: %v", err)
+		}
+		conn.Close()
 	}
 }
 
