@@ -18,3 +18,7 @@ client-go
 server-go
 http_proxy
 http_proxy_DNS
+.venv/
+.vscode/
+
+reports
