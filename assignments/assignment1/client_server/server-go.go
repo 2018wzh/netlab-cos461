@@ -1,4 +1,9 @@
-// ...existing code...
+/*****************************************************************************
+ * server-go.go
+ * Name:
+ * NetId:
+ *****************************************************************************/
+
 package main
 
 import (
@@ -43,16 +48,11 @@ func server(server_port string) {
 		// Handle connection in a separate goroutine
 		go func(c net.Conn) {
 			defer c.Close()
-			// Use bufio reader and writer and io.Copy to write to stdout
-			reader := bufio.NewReader(c)
-			writer := bufio.NewWriter(os.Stdout)
-			_, err := io.Copy(writer, reader)
+			// Wrap the connection in a buffered reader to improve reading efficiency
+			reader := bufio.NewReaderSize(c, RECV_BUFFER_SIZE)
+			_, err := io.Copy(os.Stdout, reader)
 			if err != nil {
 				log.Printf("Error copying data to stdout: %v", err)
-			}
-			// Ensure buffered stdout is flushed
-			if err := writer.Flush(); err != nil {
-				log.Printf("Error flushing stdout writer: %v", err)
 			}
 		}(conn)
 	}

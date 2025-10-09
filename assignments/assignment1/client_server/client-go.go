@@ -40,29 +40,30 @@ func client(server_ip string, server_port string) {
 	}
 	defer conn.Close()
 
-	// Read message from stdin and send in SEND_BUFFER_SIZE chunks for compatibility
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		if err := scanner.Err(); err != nil {
-			log.Fatalf("Error reading from stdin: %v", err)
+	// Read into a buffer of size SEND_BUFFER_SIZE and write each chunk fully to the connection.
+	reader := bufio.NewReader(os.Stdin)
+	buf := make([]byte, SEND_BUFFER_SIZE)
+	for {
+		n, rerr := reader.Read(buf)
+		if n > 0 {
+			// ensure full write of buf[:n]
+			written := 0
+			for written < n {
+				wn, werr := conn.Write(buf[written:n])
+				if werr != nil {
+					log.Fatalf("Error sending data to server: %v", werr)
+				}
+				written += wn
+			}
 		}
-		message := scanner.Text()
-		for i := 0; i < len(message); i += SEND_BUFFER_SIZE {
-			end := i + SEND_BUFFER_SIZE
-			if end > len(message) {
-				end = len(message)
+		if rerr != nil {
+			if rerr == io.EOF {
+				break
 			}
-			_, err := io.WriteString(conn, message[i:end])
-			if err != nil {
-				log.Fatalf("Error sending message to server: %v", err)
-			}
+			log.Fatalf("Error reading from stdin: %v", rerr)
 		}
 	}
-	// Send a final newline to indicate end of message
-	_, err = io.WriteString(conn, "\n")
-	if err != nil {
-		log.Fatalf("Error sending final newline to server: %v", err)
-	}
+
 }
 
 // Main parses command-line arguments and calls client function
