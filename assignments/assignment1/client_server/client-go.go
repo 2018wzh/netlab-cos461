@@ -63,7 +63,8 @@ func client(server_ip string, server_port string) {
 			log.Fatalf("Error reading from stdin: %v", rerr)
 		}
 	}
-
+	// Close the connection
+	conn.Close()
 }
 
 // Main parses command-line arguments and calls client function
