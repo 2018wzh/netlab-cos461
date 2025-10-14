@@ -28,6 +28,7 @@ int client(char *server_ip, char *server_port) {
     fprintf(stderr, "Invalid port number: %s\n", server_port);
     return -1;
   }
+  // Create socket
   int sockfd;
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0) {
