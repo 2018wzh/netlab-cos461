@@ -75,12 +75,6 @@ func handle(conn net.Conn) {
 			}
 		}
 
-		// Check headers
-		if req.Header.Get("Content-Length") != "" || req.Header.Get("Transfer-Encoding") != "" {
-			errhandle(conn)
-			continue
-		}
-
 		// Only handle GET requests for now
 		if req.Method != "GET" {
 			log.Printf("Unsupported method: %s", req.Method)
