@@ -123,6 +123,7 @@ func handle(conn net.Conn) {
 }
 
 func main() {
+	log.SetOutput(os.Stderr)
 	if len(os.Args) != 2 {
 		log.Fatal("Usage: ./http_proxy [listen port]")
 	}

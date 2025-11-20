@@ -115,7 +115,7 @@ func handle(conn net.Conn) {
 		if resp.Header.Get("Content-Type") == "text/html" {
 			bodyBytes, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				log.Printf("Error reading response body: %v", err)
+				log.Print("Error reading response body: %v", err)
 				errhandle(conn)
 				return
 			}
@@ -194,6 +194,8 @@ func extractHostname(url string) string {
 }
 
 func main() {
+	// Redirect to stderr
+	log.SetOutput(os.Stderr)
 	if len(os.Args) != 2 {
 		log.Fatal("Usage: ./http_proxy [listen port]")
 	}
