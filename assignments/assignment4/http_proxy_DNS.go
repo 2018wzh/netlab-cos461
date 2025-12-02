@@ -187,10 +187,27 @@ func extractHostname(url string) string {
 
 	// Extract the hostname (up to the first "/")
 	parts := strings.SplitN(url, "/", 2)
-	if len(parts) > 0 {
-		return parts[0]
+	if len(parts) <= 0 {
+		return ""
 	}
-	return ""
+
+	var hostname = parts[0]
+
+	// Check for ipv6 address in brackets
+	if strings.HasPrefix(hostname, "[") {
+		endIdx := strings.Index(hostname, "]")
+		if endIdx != -1 {
+			return hostname[1:endIdx]
+		}
+	}
+
+	// Remove port if present
+	if strings.Contains(hostname, ":") {
+		hostParts := strings.SplitN(hostname, ":", 2)
+		hostname = hostParts[0]
+	}
+
+	return hostname
 }
 
 func main() {
